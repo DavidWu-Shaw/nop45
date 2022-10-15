@@ -63,6 +63,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Update="Themes\Better\Views\Catalog\Vendor.cshtml">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
     <Content Update="Themes\Better\Views\Product\ProductTemplate.Article.cshtml">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
