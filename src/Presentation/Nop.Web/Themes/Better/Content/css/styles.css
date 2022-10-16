@@ -982,8 +982,12 @@ label, label + * {
 }
 
 .header-logo {
-  margin: 0 0 20px;
+  margin: 0 0 0 0;
   text-align: center;
+}
+
+.header-logo-wrapper {
+  text-align: left;
 }
 
 .header-logo a {
@@ -7937,10 +7941,12 @@ label, label + * {
   }
 
   .header-logo {
-    display: table-cell;
+    display: inline-block;
     text-align: left;
     vertical-align: middle;
     font-size: 0;
+    width: 50%;
+    height: 45px;
   }
 
   .search-box {
