@@ -4,6 +4,9 @@ namespace Nop.Web.Infrastructure.Cache
 {
     public static partial class NopModelCacheDefaults
     {
+        // Self extention
+        public static string VendorProductsCacheKeyById => "Nop.pres.vendor.products-{0}";
+
         /// <summary>
         /// Key for ManufacturerNavigationModel caching
         /// </summary>
