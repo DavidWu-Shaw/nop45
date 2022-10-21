@@ -5,21 +5,21 @@ namespace Nop.Core.Domain.Customers
 {
     public partial class Customer
     {
-        private ICollection<CustomerVendorMapping> _customerVendorMappings;
+        private ICollection<CustomerVendor> _customerVendorMappings;
 
-        public void AddCustomerVendorMapping(CustomerVendorMapping customerVendorMapping)
+        public void AddCustomerVendorMapping(CustomerVendor customerVendorMapping)
         {
             CustomerVendorMappings.Add(customerVendorMapping);
         }
 
-        public void RemoveCustomerVendorMapping(CustomerVendorMapping customerVendorMapping)
+        public void RemoveCustomerVendorMapping(CustomerVendor customerVendorMapping)
         {
             CustomerVendorMappings.Remove(customerVendorMapping);
         }
 
-        public virtual ICollection<CustomerVendorMapping> CustomerVendorMappings
+        public virtual ICollection<CustomerVendor> CustomerVendorMappings
         {
-            get => _customerVendorMappings ?? (_customerVendorMappings = new List<CustomerVendorMapping>());
+            get => _customerVendorMappings ?? (_customerVendorMappings = new List<CustomerVendor>());
             protected set => _customerVendorMappings = value;
         }
     }

@@ -1,6 +1,7 @@
 ﻿using Nop.Core;
 using Nop.Core.Domain.Customers;
 using System;
+using System.Threading.Tasks;
 
 namespace Nop.Services.Customers
 {
@@ -14,7 +15,7 @@ namespace Nop.Services.Customers
         /// </summary>
         /// <param name="guid">Nullable Guid of customer Guid</param>
         /// <returns></returns>
-        public Customer GetGuestCustomer(Guid? guid)
+        public async Task<Customer> GetGuestCustomer(Guid? guid)
         {
             var customer = new Customer
             {
@@ -25,10 +26,10 @@ namespace Nop.Services.Customers
             };
 
             //add to 'Guests' role
-            var guestRole = GetCustomerRoleBySystemName(NopCustomerDefaults.GuestsRoleName);
+            var guestRole = await GetCustomerRoleBySystemNameAsync(NopCustomerDefaults.GuestsRoleName);
             if (guestRole == null)
                 throw new NopException("'Guests' role could not be loaded");
-            customer.AddCustomerRoleMapping(new CustomerCustomerRoleMapping { CustomerRole = guestRole });
+            //customer.AddCustomerRoleMapping(new CustomerCustomerRoleMapping { CustomerRole = guestRole });
 
             return customer;
         }

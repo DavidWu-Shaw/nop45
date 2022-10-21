@@ -6,6 +6,7 @@ using Nop.Web.Areas.Admin.Factories;
 using Nop.Web.Areas.Admin.Helpers;
 using Nop.Web.Framework.Factories;
 using Nop.Web.Infrastructure.Installation;
+using Nop.Web.Areas.Admin.Models.Self;
 
 namespace Nop.Web.Infrastructure
 {
@@ -85,8 +86,10 @@ namespace Nop.Web.Infrastructure
             services.AddScoped<IVendorAttributeModelFactory, VendorAttributeModelFactory>();
             services.AddScoped<IVendorModelFactory, VendorModelFactory>();
             services.AddScoped<IWidgetModelFactory, WidgetModelFactory>();
+            services.AddScoped<IAppointmentModelFactory, AppointmentModelFactory>();
 
             //factories
+            services.AddScoped<Nop.Web.Models.Self.IAppointmentModelFactory, Nop.Web.Models.Self.AppointmentModelFactory>();
             services.AddScoped<Factories.IAddressModelFactory, Factories.AddressModelFactory>();
             services.AddScoped<Factories.IBlogModelFactory, Factories.BlogModelFactory>();
             services.AddScoped<Factories.ICatalogModelFactory, Factories.CatalogModelFactory>();

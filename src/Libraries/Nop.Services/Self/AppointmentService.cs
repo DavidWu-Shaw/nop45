@@ -5,93 +5,82 @@ using Nop.Core;
 using Nop.Data;
 using Nop.Core.Domain.Self;
 using System.Linq;
+using System.Threading.Tasks;
+using Nop.Services.Helpers;
 
 namespace Nop.Services.Self
 {
     public class AppointmentService : IAppointmentService
     {
         private readonly IRepository<Appointment> _appointmentRepository;
+        private readonly IDateTimeHelper _dateTimeHelper;
 
-        public AppointmentService(
-            IRepository<Appointment> appointmentRepository)
+        public AppointmentService(IRepository<Appointment> appointmentRepository,
+            IDateTimeHelper dateTimeHelper)
         {
             _appointmentRepository = appointmentRepository;
+            _dateTimeHelper = dateTimeHelper;
         }
 
-        public virtual Appointment GetAppointmentById(int appointmentId)
+        public virtual async Task<Appointment> GetAppointmentByIdAsync(int appointmentId)
         {
-            if (appointmentId == 0)
-                return null;
-
-            return _appointmentRepository.GetById(appointmentId);
+            return await _appointmentRepository.GetByIdAsync(appointmentId, cache => default);
         }
 
         /// <summary>
         /// Inserts a appointment
         /// </summary>
         /// <param name="appointment">Appointment</param>
-        public virtual void InsertAppointment(Appointment appointment)
+        public virtual async Task InsertAppointmentAsync(Appointment appointment)
         {
-            if (appointment == null)
-                throw new ArgumentNullException(nameof(appointment));
-
-            //insert
-            _appointmentRepository.Insert(appointment);
+            await _appointmentRepository.InsertAsync(appointment);
         }
 
-        public virtual void InsertAppointments(List<Appointment> appointments)
+        public virtual async Task InsertAppointmentsAsync(List<Appointment> appointments)
         {
             //insert
-            _appointmentRepository.Insert(appointments);
+            await _appointmentRepository.InsertAsync(appointments);
         }
 
         /// <summary>
         /// Updates the appointment
         /// </summary>
         /// <param name="appointment">Appointment</param>
-        public virtual void UpdateAppointment(Appointment appointment)
+        public virtual async Task UpdateAppointmentAsync(Appointment appointment)
         {
-            if (appointment == null)
-                throw new ArgumentNullException(nameof(appointment));
-
-            //update
-            _appointmentRepository.Update(appointment);
-
-            //event notification
-            _eventPublisher.EntityUpdated(appointment);
+            await _appointmentRepository.UpdateAsync(appointment);
         }
 
-        public virtual void DeleteAppointment(Appointment appointment)
+        public virtual async Task DeleteAppointmentAsync(Appointment appointment)
         {
-            if (appointment == null)
-                throw new ArgumentNullException(nameof(appointment));
-
-            //update
-            _appointmentRepository.Delete(appointment);
-
-            //event notification
-            _eventPublisher.EntityDeleted(appointment);
+            await _appointmentRepository.DeleteAsync(appointment);
         }
 
-        public virtual List<Appointment> GetAvailableAppointmentsByCustomer(DateTime startTimeUtc, DateTime endTimeUtc, int resourceId, int customerId)
+        public virtual async Task<List<Appointment>> GetAvailableAppointmentsByCustomerAsync(DateTime startTime, DateTime endTime, int resourceId, int customerId)
         {
+            var startTimeUtc = _dateTimeHelper.ConvertToUtcTime(startTime);
+            var endTimeUtc = _dateTimeHelper.ConvertToUtcTime(endTime);
+
             var query = _appointmentRepository.Table
                 .Where(x => x.ResourceId == resourceId)
                 .Where(x => !x.CustomerId.HasValue || x.CustomerId == customerId)
                 .Where(x => x.StartTimeUtc >= startTimeUtc && x.StartTimeUtc < endTimeUtc);
 
-            return query.ToList();
+            return await query.ToListAsync();
         }
 
         #region Tennis court booking
 
-        public virtual List<Appointment> GetAppointmentsByResource(DateTime startTimeUtc, DateTime endTimeUtc, int resourceId)
+        public virtual async Task<List<Appointment>> GetAppointmentsByResourceAsync(DateTime startTime, DateTime endTime, int resourceId)
         {
+            var startTimeUtc = _dateTimeHelper.ConvertToUtcTime(startTime);
+            var endTimeUtc = _dateTimeHelper.ConvertToUtcTime(endTime);
+
             var query = _appointmentRepository.Table
                 .Where(x => x.ResourceId == resourceId)
                 .Where(x => x.StartTimeUtc >= startTimeUtc && x.StartTimeUtc < endTimeUtc);
 
-            return query.ToList();
+            return await query.ToListAsync();
         }
 
         /// <summary>
@@ -101,13 +90,16 @@ namespace Nop.Services.Self
         /// <param name="startTimeUtc"></param>
         /// <param name="endTimeUtc"></param>
         /// <returns></returns>
-        public virtual List<Appointment> GetAppointmentsByParent(int parentProductId, DateTime startTimeUtc, DateTime endTimeUtc)
+        public virtual async Task<List<Appointment>> GetAppointmentsByParentAsync(int parentProductId, DateTime startTime, DateTime endTime)
         {
+            var startTimeUtc = _dateTimeHelper.ConvertToUtcTime(startTime);
+            var endTimeUtc = _dateTimeHelper.ConvertToUtcTime(endTime);
+
             var query = _appointmentRepository.Table
                 .Where(x => x.ParentProductId == parentProductId)
                 .Where(x => x.StartTimeUtc >= startTimeUtc && x.StartTimeUtc < endTimeUtc);
 
-            return query.ToList();
+            return await query.ToListAsync();
         }
 
         /// <summary>
@@ -117,8 +109,11 @@ namespace Nop.Services.Self
         /// <param name="startTimeUtc"></param>
         /// <param name="endTimeUtc"></param>
         /// <returns></returns>
-        public virtual bool IsTaken(int resourceId, DateTime startTimeUtc, DateTime endTimeUtc)
+        public virtual bool IsTaken(int resourceId, DateTime startTime, DateTime endTime)
         {
+            var startTimeUtc = _dateTimeHelper.ConvertToUtcTime(startTime);
+            var endTimeUtc = _dateTimeHelper.ConvertToUtcTime(endTime);
+
             var query = _appointmentRepository.Table
                 .Where(x => x.ResourceId == resourceId)
                 .Where(x => (x.StartTimeUtc >= startTimeUtc && x.StartTimeUtc < endTimeUtc) 

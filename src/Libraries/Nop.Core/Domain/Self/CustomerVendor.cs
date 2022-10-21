@@ -6,7 +6,7 @@ namespace Nop.Core.Domain.Self
     /// <summary>
     /// Represents a product category mapping
     /// </summary>
-    public partial class CustomerVendorMapping : BaseEntity
+    public partial class CustomerVendor : BaseEntity
     {
         /// <summary>
         /// Gets or sets the customer identifier

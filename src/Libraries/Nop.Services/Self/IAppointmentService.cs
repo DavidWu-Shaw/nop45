@@ -1,21 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Nop.Core.Domain.Self;
 
 namespace Nop.Services.Self
 {
     public partial interface IAppointmentService
     {
-        Appointment GetAppointmentById(int appointmentId);
-        void InsertAppointment(Appointment appointment);
-        void InsertAppointments(List<Appointment> appointments);
-        void UpdateAppointment(Appointment appointment);
-        void DeleteAppointment(Appointment appointment);
+        Task<Appointment> GetAppointmentByIdAsync(int appointmentId);
+        Task InsertAppointmentAsync(Appointment appointment);
+        Task InsertAppointmentsAsync(List<Appointment> appointments);
+        Task UpdateAppointmentAsync(Appointment appointment);
+        Task DeleteAppointmentAsync(Appointment appointment);
+
         #region Tennis court booking
-        List<Appointment> GetAppointmentsByResource(DateTime startTimeUtc, DateTime endTimeUtc, int resourceId);
-        List<Appointment> GetAppointmentsByParent(int parentProductId, DateTime startTimeUtc, DateTime endTimeUtc);
-        List<Appointment> GetAvailableAppointmentsByCustomer(DateTime startTimeUtc, DateTime endTimeUtc, int resourceId, int customerId);
-        bool IsTaken(int resourceId, DateTime startTimeUtc, DateTime endTimeUtc);
+        Task<List<Appointment>> GetAppointmentsByResourceAsync(DateTime startTime, DateTime endTime, int resourceId);
+        Task<List<Appointment>> GetAppointmentsByParentAsync(int parentProductId, DateTime startTime, DateTime endTime);
+        Task<List<Appointment>> GetAvailableAppointmentsByCustomerAsync(DateTime startTime, DateTime endTime, int resourceId, int customerId);
+        bool IsTaken(int resourceId, DateTime startTime, DateTime endTime);
         #endregion Tennis court booking
     }
 }
