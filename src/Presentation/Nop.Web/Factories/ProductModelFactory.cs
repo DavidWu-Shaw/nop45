@@ -1386,6 +1386,14 @@ namespace Nop.Web.Factories
                 AllowAddingOnlyExistingAttributeCombinations = product.AllowAddingOnlyExistingAttributeCombinations
             };
 
+            // Check if current customer is authorized to book time for this product
+            //model.IsUserAuthorizedToBookTime = _workContext.CurrentCustomer.CustomerVendorMappings.Any(cv => cv.VendorId == product.VendorId && cv.IsApproved);
+            // TODO: put values in product attribute
+            model.BusinessBeginsHour = 9;
+            model.BusinessEndsHour = 23;
+            model.MaxHoursAllowed = 2;
+            model.MaxFutureDays = 7;
+
             //automatically generate product description?
             if (_seoSettings.GenerateProductMetaDescription && string.IsNullOrEmpty(model.MetaDescription))
             {

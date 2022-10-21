@@ -45,8 +45,8 @@ namespace Nop.Web.Models.Self
             var model = new AppointmentInfoModel
             {
                 id = appointment.Id.ToString(),
-                start = _dateTimeHelper.ConvertToUserTime(appointment.StartTimeUtc, TimeZoneInfo.Local, TimeZoneInfo.Utc).ToString("yyyy-MM-ddTHH:mm:ss"),
-                end = _dateTimeHelper.ConvertToUserTime(appointment.EndTimeUtc, TimeZoneInfo.Local, TimeZoneInfo.Utc).ToString("yyyy-MM-ddTHH:mm:ss"),
+                start = _dateTimeHelper.ConvertToUserTime(appointment.StartTimeUtc, TimeZoneInfo.Utc, TimeZoneInfo.Local).ToString("yyyy-MM-ddTHH:mm:ss"),
+                end = _dateTimeHelper.ConvertToUserTime(appointment.EndTimeUtc, TimeZoneInfo.Utc, TimeZoneInfo.Local).ToString("yyyy-MM-ddTHH:mm:ss"),
                 resource = appointment.ResourceId.ToString()
             };
             model.tags = new TagModel
@@ -67,8 +67,8 @@ namespace Nop.Web.Models.Self
             var model = new VendorAppointmentInfoModel
             {
                 id = appointment.Id.ToString(),
-                start = _dateTimeHelper.ConvertToUserTime(appointment.StartTimeUtc, TimeZoneInfo.Local, TimeZoneInfo.Utc).ToString("yyyy-MM-ddTHH:mm:ss"),
-                end = _dateTimeHelper.ConvertToUserTime(appointment.EndTimeUtc, TimeZoneInfo.Local, TimeZoneInfo.Utc).ToString("yyyy-MM-ddTHH:mm:ss"),
+                start = _dateTimeHelper.ConvertToUserTime(appointment.StartTimeUtc, TimeZoneInfo.Utc, TimeZoneInfo.Local).ToString("yyyy-MM-ddTHH:mm:ss"),
+                end = _dateTimeHelper.ConvertToUserTime(appointment.EndTimeUtc, TimeZoneInfo.Utc, TimeZoneInfo.Local).ToString("yyyy-MM-ddTHH:mm:ss"),
                 resource = appointment.ResourceId.ToString()
             };
 

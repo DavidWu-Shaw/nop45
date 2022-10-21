@@ -9,7 +9,7 @@ namespace Nop.Core.Domain.Self
         public DateTime StartTimeUtc { get; set; }
         public DateTime EndTimeUtc { get; set; }
         public string Notes { get; set; }
-        public short StatusId { get; set; }
+        public int StatusId { get; set; }
         public int ResourceId { get; set; }
         public int? CustomerId { get; set; }
         public int? ParentProductId { get; set; }
@@ -19,7 +19,7 @@ namespace Nop.Core.Domain.Self
         public AppointmentStatusType Status
         {
             get => (AppointmentStatusType)StatusId;
-            set => StatusId = (short)value;
+            set => StatusId = (int)value;
         }
     }
 }

@@ -173,6 +173,7 @@ namespace Nop.Web.Controllers
         #region Appointment Methods
 
         [HttpPost]
+        [IgnoreAntiforgeryToken]
         public virtual async Task<IActionResult> AppointmentSlotsByCustomer(DateTime start, DateTime end, int resourceId)
         {
             var currentCustomer = _workContext.GetCurrentCustomerAsync();
@@ -190,7 +191,7 @@ namespace Nop.Web.Controllers
 
         public virtual async Task<IActionResult> AppointmentUpdate(int id)
         {
-            var currentCustomer = _workContext.GetCurrentCustomerAsync();
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
             //if (currentCustomer.IsGuest())
             //{
             //    string statusText = _localizationService.GetResource("Product.AppointmentUpdate.LoginRequired");
@@ -212,9 +213,10 @@ namespace Nop.Web.Controllers
         }
 
         [HttpPost]
+        [IgnoreAntiforgeryToken]
         public virtual async Task<IActionResult> AppointmentRequest(int id, string notes)
         {
-            var currentCustomer = _workContext.GetCurrentCustomerAsync();
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
             //if (_workContext.CurrentCustomer.IsGuest())
             //{
             //    string statusText = _localizationService.GetResource("Product.AppointmentUpdate.LoginRequired");
@@ -243,9 +245,10 @@ namespace Nop.Web.Controllers
         }
 
         [HttpPost]
+        [IgnoreAntiforgeryToken]
         public virtual async Task<IActionResult> AppointmentCancel(int id)
         {
-            var currentCustomer = _workContext.GetCurrentCustomerAsync();
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
             //if (_workContext.CurrentCustomer.IsGuest())
             //{
             //    string statusText = _localizationService.GetResource("Product.AppointmentUpdate.LoginRequired");
@@ -282,6 +285,7 @@ namespace Nop.Web.Controllers
         }
 
         [HttpPost]
+        [IgnoreAntiforgeryToken]
         public virtual async Task<IActionResult> GetAppointmentsByParent(int parentProductId, DateTime start, DateTime end)
         {
             var events = await _appointmentService.GetAppointmentsByParentAsync(parentProductId, start, end);
@@ -308,7 +312,7 @@ namespace Nop.Web.Controllers
 
         public virtual async Task<IActionResult> RequestVendorAppointment(int parentProductId, int resourceId, DateTime start, DateTime end)
         {
-            var currentCustomer = _workContext.GetCurrentCustomerAsync();
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
             //if (_workContext.CurrentCustomer.IsGuest())
             //{
             //    string statusText = _localizationService.GetResource("GroupedProduct.RequestVendorAppointment.LoginRequired");
@@ -330,9 +334,10 @@ namespace Nop.Web.Controllers
         }
 
         [HttpPost]
+        [IgnoreAntiforgeryToken]
         public virtual async Task<IActionResult> SaveVendorAppointment(int parentProductId, int resourceId, DateTime start, DateTime end)
         {
-            var currentCustomer = _workContext.GetCurrentCustomerAsync();
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
             //if (_workContext.CurrentCustomer.IsGuest())
             //{
             //    string statusText = _localizationService.GetResource("GroupedProduct.RequestVendorAppointment.LoginRequired");
@@ -350,14 +355,13 @@ namespace Nop.Web.Controllers
                 {
                     var startTimeUtc = _dateTimeHelper.ConvertToUtcTime(start);
                     var endTimeUtc = _dateTimeHelper.ConvertToUtcTime(end);
-                    var customer = await _workContext.GetCurrentCustomerAsync();
 
                     Appointment appointment = new Appointment
                     {
                         StartTimeUtc = startTimeUtc,
                         EndTimeUtc = endTimeUtc,
                         ResourceId = resourceId,
-                        Status = AppointmentStatusType.Confirmed,
+                        StatusId = (int)AppointmentStatusType.Confirmed,
                         CustomerId = currentCustomer.Id,
                         ParentProductId = parentProductId
                     };
