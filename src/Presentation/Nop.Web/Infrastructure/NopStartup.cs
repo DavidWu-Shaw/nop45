@@ -4,9 +4,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Nop.Core.Infrastructure;
 using Nop.Web.Areas.Admin.Factories;
 using Nop.Web.Areas.Admin.Helpers;
+using Nop.Web.Areas.Admin.Models.Self;
 using Nop.Web.Framework.Factories;
 using Nop.Web.Infrastructure.Installation;
-using Nop.Web.Areas.Admin.Models.Self;
+using Nop.Web.Models.Self;
 
 namespace Nop.Web.Infrastructure
 {
@@ -86,10 +87,10 @@ namespace Nop.Web.Infrastructure
             services.AddScoped<IVendorAttributeModelFactory, VendorAttributeModelFactory>();
             services.AddScoped<IVendorModelFactory, VendorModelFactory>();
             services.AddScoped<IWidgetModelFactory, WidgetModelFactory>();
-            services.AddScoped<IAppointmentModelFactory, AppointmentModelFactory>();
+            services.AddScoped<IAppointmentAdminModelFactory, AppointmentAdminModelFactory>();
 
             //factories
-            services.AddScoped<Nop.Web.Models.Self.IAppointmentModelFactory, Nop.Web.Models.Self.AppointmentModelFactory>();
+            services.AddScoped<IAppointmentModelFactory, AppointmentModelFactory>();
             services.AddScoped<Factories.IAddressModelFactory, Factories.AddressModelFactory>();
             services.AddScoped<Factories.IBlogModelFactory, Factories.BlogModelFactory>();
             services.AddScoped<Factories.ICatalogModelFactory, Factories.CatalogModelFactory>();
@@ -114,6 +115,8 @@ namespace Nop.Web.Infrastructure
 
             //helpers classes
             services.AddScoped<ITinyMceHelper, TinyMceHelper>();
+            // appsettings
+            services.AddSingleton<AppConfig>(configuration.GetSection("AppConfig").Get<AppConfig>());
         }
 
         // <summary>

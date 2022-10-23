@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Nop.Web.Areas.Admin.Models.Self
 {
-    public interface IAppointmentModelFactory
+    public interface IAppointmentAdminModelFactory
     {
         Task<AppointmentEditModel> PrepareAppointmentEditModelAsync(Appointment appointment);
         AppointmentInfoModel PrepareAppointmentInfoModel(Appointment appointment);

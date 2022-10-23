@@ -87,7 +87,7 @@ namespace Nop.Web.Areas.Admin.Controllers
         private readonly IGenericAttributeService _genericAttributeService;
         private readonly IWorkContext _workContext;
         private readonly VendorSettings _vendorSettings;
-        private readonly IAppointmentModelFactory _appointmentModelFactory;
+        private readonly IAppointmentAdminModelFactory _appointmentModelFactory;
         private readonly IAppointmentService _appointmentService;
         private readonly IDateTimeHelper _dateTimeHelper;
 
@@ -128,7 +128,7 @@ namespace Nop.Web.Areas.Admin.Controllers
             IUrlRecordService urlRecordService,
             IGenericAttributeService genericAttributeService,
             IWorkContext workContext,
-            IAppointmentModelFactory appointmentModelFactory,
+            IAppointmentAdminModelFactory appointmentModelFactory,
             IAppointmentService appointmentService,
             IDateTimeHelper dateTimeHelper,
             VendorSettings vendorSettings)

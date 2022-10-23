@@ -12,14 +12,14 @@ using System.Threading.Tasks;
 
 namespace Nop.Web.Areas.Admin.Models.Self
 {
-    public partial class AppointmentModelFactory : IAppointmentModelFactory
+    public partial class AppointmentAdminModelFactory : IAppointmentAdminModelFactory
     {
         private readonly IProductService _productService;
         private readonly ICustomerService _customerService;
         private readonly IDateTimeHelper _dateTimeHelper;
         private readonly IStaticCacheManager _cacheManager;
 
-        public AppointmentModelFactory(IProductService productService, 
+        public AppointmentAdminModelFactory(IProductService productService, 
             ICustomerService customerService, 
             IDateTimeHelper dateTimeHelper, 
             IStaticCacheManager cacheManager)
