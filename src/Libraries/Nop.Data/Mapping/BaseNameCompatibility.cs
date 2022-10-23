@@ -6,6 +6,7 @@ using Nop.Core.Domain.Discounts;
 using Nop.Core.Domain.Forums;
 using Nop.Core.Domain.News;
 using Nop.Core.Domain.Security;
+using Nop.Core.Domain.Self;
 using Nop.Core.Domain.Shipping;
 
 namespace Nop.Data.Mapping
@@ -30,6 +31,7 @@ namespace Nop.Data.Mapping
             { typeof(ProductCategory), "Product_Category_Mapping" },
             { typeof(ProductManufacturer), "Product_Manufacturer_Mapping" },
             { typeof(ProductPicture), "Product_Picture_Mapping" },
+            { typeof(CustomerVendor), "Customer_Vendor_Mapping" },
             { typeof(ProductSpecificationAttribute), "Product_SpecificationAttribute_Mapping" },
             { typeof(ForumGroup), "Forums_Group" },
             { typeof(Forum), "Forums_Forum" },

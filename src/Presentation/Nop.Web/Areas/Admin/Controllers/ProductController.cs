@@ -13,6 +13,7 @@ using Nop.Core.Domain.Customers;
 using Nop.Core.Domain.Discounts;
 using Nop.Core.Domain.Media;
 using Nop.Core.Domain.Orders;
+using Nop.Core.Domain.Self;
 using Nop.Core.Domain.Vendors;
 using Nop.Core.Infrastructure;
 using Nop.Services.Catalog;
@@ -21,17 +22,21 @@ using Nop.Services.Configuration;
 using Nop.Services.Customers;
 using Nop.Services.Discounts;
 using Nop.Services.ExportImport;
+using Nop.Services.Helpers;
 using Nop.Services.Localization;
 using Nop.Services.Logging;
 using Nop.Services.Media;
 using Nop.Services.Messages;
 using Nop.Services.Orders;
 using Nop.Services.Security;
+using Nop.Services.Self;
 using Nop.Services.Seo;
 using Nop.Services.Shipping;
 using Nop.Web.Areas.Admin.Factories;
+using Nop.Web.Areas.Admin.Helpers;
 using Nop.Web.Areas.Admin.Infrastructure.Mapper.Extensions;
 using Nop.Web.Areas.Admin.Models.Catalog;
+using Nop.Web.Areas.Admin.Models.Self;
 using Nop.Web.Framework.Controllers;
 using Nop.Web.Framework.Mvc;
 using Nop.Web.Framework.Mvc.Filters;
@@ -40,6 +45,12 @@ namespace Nop.Web.Areas.Admin.Controllers
 {
     public partial class ProductController : BaseAdminController
     {
+
+        public const int MORNING_SHIFT_STARTS = 9;
+        public const int MORNING_SHIFT_ENDS = 13;
+        public const int AFTERNOON_SHIFT_STARTS = 14;
+        public const int AFTERNOON_SHIFT_ENDS = 18;
+
         #region Fields
 
         private readonly IAclService _aclService;
@@ -76,6 +87,9 @@ namespace Nop.Web.Areas.Admin.Controllers
         private readonly IGenericAttributeService _genericAttributeService;
         private readonly IWorkContext _workContext;
         private readonly VendorSettings _vendorSettings;
+        private readonly IAppointmentAdminModelFactory _appointmentModelFactory;
+        private readonly IAppointmentService _appointmentService;
+        private readonly IDateTimeHelper _dateTimeHelper;
 
         #endregion
 
@@ -114,6 +128,9 @@ namespace Nop.Web.Areas.Admin.Controllers
             IUrlRecordService urlRecordService,
             IGenericAttributeService genericAttributeService,
             IWorkContext workContext,
+            IAppointmentAdminModelFactory appointmentModelFactory,
+            IAppointmentService appointmentService,
+            IDateTimeHelper dateTimeHelper,
             VendorSettings vendorSettings)
         {
             _aclService = aclService;
@@ -150,6 +167,9 @@ namespace Nop.Web.Areas.Admin.Controllers
             _genericAttributeService = genericAttributeService;
             _workContext = workContext;
             _vendorSettings = vendorSettings;
+            _appointmentModelFactory = appointmentModelFactory;
+            _appointmentService = appointmentService;
+            _dateTimeHelper = dateTimeHelper;
         }
 
         #endregion
@@ -729,6 +749,322 @@ namespace Nop.Web.Areas.Admin.Controllers
         }
 
         #endregion
+
+        #region Appointment Methods
+
+        /// <summary>
+        /// Get method for /Admin/Product/AppointmentSchedule/{productId}
+        /// </summary>
+        /// <param name="id">Product Id</param>
+        /// <returns></returns>
+        public virtual async Task<IActionResult> AppointmentSchedule(int id)
+        {
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageProducts))
+                return AccessDeniedView();
+
+            //try to get a product with the specified id
+            var product = await _productService.GetProductByIdAsync(id);
+            if (product == null || product.Deleted)
+                return RedirectToAction("List");
+
+            //a vendor should have access only to his products
+            var currentVendor = await _workContext.GetCurrentVendorAsync();
+            if (currentVendor != null && product.VendorId != currentVendor.Id)
+                return RedirectToAction("List");
+            // exclude grouped product and child product
+            if (product.ProductType == ProductType.GroupedProduct || product.ParentGroupedProductId > 0)
+            {
+                return RedirectToAction("List");
+            }
+            //prepare model
+            var model = _appointmentModelFactory.PrepareProductCalendarModel(new ProductCalendarModel(), product);
+
+            return View(model);
+        }
+
+        /// <summary>
+        /// Get method for /Admin/Product/AppointmentCalendar/{productId}
+        /// </summary>
+        /// <param name="id">Product Id</param>
+        /// <returns></returns>
+        public virtual async Task<IActionResult> AppointmentCalendar(int id)
+        {
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageProducts))
+                return AccessDeniedView();
+
+            //try to get a product with the specified id
+            var product = await _productService.GetProductByIdAsync(id);
+            if (product == null || product.Deleted)
+                return RedirectToAction("List");
+
+            //a vendor should have access only to his products
+            var currentVendor = await _workContext.GetCurrentVendorAsync();
+            if (currentVendor != null && product.VendorId != currentVendor.Id)
+                return RedirectToAction("List");
+
+            // load parent product if it's a child product -- By David in July 2020
+            if (product.ParentGroupedProductId > 0)
+            {
+                product = await _productService.GetProductByIdAsync(product.ParentGroupedProductId);
+                if (product == null || product.Deleted)
+                    return RedirectToAction("List");
+            }
+            //prepare model
+            var model = _appointmentModelFactory.PrepareProductCalendarModel(new ProductCalendarModel(), product);
+
+            return View(model);
+        }
+
+        [HttpPost]
+        public virtual async Task<IActionResult> AppointmentList(DateTime start, DateTime end, int resourceId)
+        {
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageProducts))
+                return await AccessDeniedDataTablesJson();
+
+            var appointments = await _appointmentService.GetAppointmentsByResourceAsync(start, end, resourceId);
+
+            var model = new List<AppointmentInfoModel>();
+            foreach (var appointment in appointments)
+            {
+                var item = _appointmentModelFactory.PrepareAppointmentInfoModel(appointment);
+                model.Add(item);
+            }
+
+            return Json(model);
+        }
+
+        [HttpPost]
+        public virtual async Task<IActionResult> AppointmentCreate(DateTime start, DateTime end, int resourceId, string scale)
+        {
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageProducts))
+                return AccessDeniedView();
+
+            var timeSlots = GetSlots(start, end, scale);
+            var appointments = new List<Appointment>();
+            foreach (var slot in timeSlots)
+            {
+                Appointment appointment = new Appointment
+                {
+                    StartTimeUtc = slot.Start.ToUniversalTime(),
+                    EndTimeUtc = slot.End.ToUniversalTime(),
+                    ResourceId = resourceId,
+                    Status = AppointmentStatusType.Free
+                };
+                appointments.Add(appointment);
+            }
+
+            await _appointmentService.InsertAppointmentsAsync(appointments);
+
+            return Json(new { status = true, responseText = $"{timeSlots.Count} records created." });
+        }
+
+        private List<TimeSlot> GetSlots(DateTime start, DateTime end, string scale)
+        {
+            if (scale == "shifts")
+            {
+                return GetSlotsByShift(start, end);
+            }
+            else
+            {
+                var helper = new AppointmentTimeSlotHelper(MORNING_SHIFT_STARTS, MORNING_SHIFT_ENDS, AFTERNOON_SHIFT_STARTS, AFTERNOON_SHIFT_ENDS);
+                return helper.GetSlotsByHour(start, end);
+            }
+        }
+
+        private List<TimeSlot> GetSlotsByShift(DateTime start, DateTime end)
+        {
+            var result = new List<TimeSlot>();
+
+            return result;
+        }
+
+        /// <summary>
+        /// Get method for /Admin/Product/AppointmentEdit/{appointmentId}
+        /// </summary>
+        /// <param name="id">Appointment Id</param>
+        /// <returns></returns>
+        public virtual async Task<IActionResult> AppointmentEdit(int id)
+        {
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageProducts))
+                return AccessDeniedView();
+
+            var appointment = await _appointmentService.GetAppointmentByIdAsync(id);
+            if (appointment != null)
+            {
+                //prepare model
+                var model = await _appointmentModelFactory.PrepareAppointmentEditModelAsync(appointment);
+                // TODO: remove admin user later
+                //model.IsLoggedInAsVendor = _workContext.CurrentVendor != null || _workContext.IsAdmin;
+                return Json(new { status = true, data = model });
+            }
+            else
+            {
+                string statusText = await _localizationService.GetResourceAsync("Admin.Product.AppointmentEdit.SlotNoExist");
+                return Json(new { status = false, message = statusText });
+            }
+        }
+
+        [HttpPost]
+        public virtual async Task<IActionResult> AppointmentConfirm(int id)
+        {
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageProducts))
+                return AccessDeniedView();
+
+            var appointment = await _appointmentService.GetAppointmentByIdAsync(id);
+            if (appointment != null && appointment.Status == AppointmentStatusType.Waiting)
+            {
+                appointment.Status = AppointmentStatusType.Confirmed;
+                await _appointmentService.UpdateAppointmentAsync(appointment);
+
+                var model = await _appointmentModelFactory.PrepareAppointmentEditModelAsync(appointment);
+
+                string statusText = await _localizationService.GetResourceAsync("Admin.Product.AppointmentConfirm.Confirmed");
+                return Json(new { status = true, message = statusText, data = model });
+            }
+            else
+            {
+                // Customer may have just concelled this appointment
+                string statusText = await _localizationService.GetResourceAsync("Admin.Product.AppointmentConfirm.Failed");
+                return Json(new { status = false, message = statusText });
+            }
+        }
+
+        [HttpPost]
+        public virtual async Task<IActionResult> AppointmentCancel(int id)
+        {
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageProducts))
+                return AccessDeniedView();
+
+            var appointment = await _appointmentService.GetAppointmentByIdAsync(id);
+            if (appointment != null && (appointment.Status == AppointmentStatusType.Waiting || appointment.Status == AppointmentStatusType.Confirmed))
+            {
+                appointment.Status = AppointmentStatusType.Free;
+                appointment.CustomerId = null;
+                appointment.Notes = "";
+                await _appointmentService.UpdateAppointmentAsync(appointment);
+
+                var model = await _appointmentModelFactory.PrepareAppointmentEditModelAsync(appointment);
+
+                string statusText = await _localizationService.GetResourceAsync("Admin.Product.AppointmentCancel.Cancelled");
+                return Json(new { status = true, message = statusText, data = model });
+            }
+            else
+            {
+                string statusText = await _localizationService.GetResourceAsync("Admin.Product.AppointmentCancel.Failed");
+                return Json(new { status = false, message = statusText });
+            }
+        }
+
+        [HttpPost]
+        public virtual async Task<IActionResult> AppointmentDelete(int id)
+        {
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageProducts))
+                return AccessDeniedView();
+
+            var appointment = await _appointmentService.GetAppointmentByIdAsync(id);
+            if (appointment != null && appointment.Status == AppointmentStatusType.Free)
+            {
+                await _appointmentService.DeleteAppointmentAsync(appointment);
+                string statusText = await _localizationService.GetResourceAsync("Admin.Product.AppointmentDelete.Deleted");
+                return Json(new { status = true, message = statusText });
+            }
+            else
+            {
+                string statusText = await _localizationService.GetResourceAsync("Admin.Product.AppointmentDelete.Failed");
+                return Json(new { status = false, message = statusText });
+            }
+        }
+
+        #endregion Appointment Methods
+
+        #region Grouped Products Appointments
+
+        public virtual async Task<IActionResult> GetResourcesByParent(int parentProductId)
+        {
+            var model = await _appointmentModelFactory.PrepareVendorResourcesModelAsync(parentProductId);
+            return Json(model);
+        }
+
+        [HttpPost]
+        public virtual async Task<IActionResult> GetAppointmentsByParent(int parentProductId, DateTime start, DateTime end)
+        {
+            var events = await _appointmentService.GetAppointmentsByParentAsync(parentProductId, start, end);
+
+            var model = new List<VendorAppointmentInfoModel>();
+            foreach (var appointment in events)
+            {
+                var item = _appointmentModelFactory.PrepareVendorAppointmentInfoModel(appointment);
+                model.Add(item);
+                item.backColor = "#E69138";
+                item.bubbleHtml = item.text;
+                item.moveDisabled = false;
+                item.resizeDisabled = false;
+                item.clickDisabled = false;
+            }
+
+            return Json(model);
+        }
+
+        public virtual async Task<IActionResult> RequestVendorAppointment(int parentProductId, int resourceId, DateTime start, DateTime end)
+        {
+            var vendorResources = await _appointmentModelFactory.PrepareVendorResourcesModelAsync(parentProductId);
+            var vendorResource = vendorResources.FirstOrDefault(o => o.id == resourceId.ToString());
+
+            AppointmentEditModel model = new AppointmentEditModel();
+            model.ResourceId = resourceId;
+            model.ResourceName = vendorResource != null ? vendorResource.name : resourceId.ToString();
+            model.TimeSlot = $"{start.ToShortTimeString()} - {end.ToShortTimeString()}, {start.ToShortDateString()} {start.ToString("dddd")}";
+            model.Start = start.ToString("yyyy-MM-ddTHH:mm:ss");
+            model.End = end.ToString("yyyy-MM-ddTHH:mm:ss");
+            model.Status = AppointmentStatusType.Free.ToString();
+
+            return Json(new { status = true, data = model });
+        }
+
+        [HttpPost]
+        public virtual async Task<IActionResult> SaveVendorAppointment(int parentProductId, int resourceId, DateTime start, DateTime end)
+        {
+
+            // TODO: Get Product by parentProductId
+            // Check business logic by Product
+            // Check if CurrentCustomer is a member of Vendor 
+
+            try
+            {
+                // Check if the requested time slot is taken already 
+                if (!_appointmentService.IsTaken(resourceId, start, end))
+                {
+                    var startTimeUtc = _dateTimeHelper.ConvertToUtcTime(start);
+                    var endTimeUtc = _dateTimeHelper.ConvertToUtcTime(end);
+                    var customer = await _workContext.GetCurrentCustomerAsync();
+
+                    Appointment appointment = new Appointment
+                    {
+                        StartTimeUtc = startTimeUtc,
+                        EndTimeUtc = endTimeUtc,
+                        ResourceId = resourceId,
+                        Status = AppointmentStatusType.Confirmed,
+                        CustomerId = customer.Id,
+                        ParentProductId = parentProductId
+                    };
+                    await _appointmentService.InsertAppointmentAsync(appointment);
+                    return Json(new { status = true });
+                }
+                else
+                {
+                    // Time slot is taken, show error message
+                    string statusText = await _localizationService.GetResourceAsync("GroupedProduct.VendorAppointment.TimeTaken");
+                    return Json(new { status = false, message = statusText });
+                }
+            }
+            catch (Exception ex)
+            {
+                string statusText = $"{await _localizationService.GetResourceAsync("GroupedProduct.VendorAppointment.Failed")}: {ex.Message}";
+                return Json(new { status = false, message = statusText });
+            }
+        }
+
+        #endregion Grouped Products Appointments
 
         #region Methods
 

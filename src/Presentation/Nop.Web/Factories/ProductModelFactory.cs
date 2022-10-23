@@ -31,6 +31,7 @@ using Nop.Web.Infrastructure.Cache;
 using Nop.Web.Models.Catalog;
 using Nop.Web.Models.Common;
 using Nop.Web.Models.Media;
+using Nop.Web.Models.Self;
 
 namespace Nop.Web.Factories
 {
@@ -76,7 +77,8 @@ namespace Nop.Web.Factories
         private readonly OrderSettings _orderSettings;
         private readonly SeoSettings _seoSettings;
         private readonly ShippingSettings _shippingSettings;
-        private readonly VendorSettings _vendorSettings;        
+        private readonly VendorSettings _vendorSettings;
+        private readonly AppConfig _appConfig;
 
         #endregion
 
@@ -117,6 +119,7 @@ namespace Nop.Web.Factories
             OrderSettings orderSettings,
             SeoSettings seoSettings,
             ShippingSettings shippingSettings,
+            AppConfig appConfig,
             VendorSettings vendorSettings)
         {
             _captchaSettings = captchaSettings;
@@ -155,7 +158,7 @@ namespace Nop.Web.Factories
             _seoSettings = seoSettings;
             _shippingSettings = shippingSettings;
             _vendorSettings = vendorSettings;
-            
+            _appConfig = appConfig;            
         }
 
         #endregion
@@ -1385,6 +1388,18 @@ namespace Nop.Web.Factories
                 VisibleIndividually = product.VisibleIndividually,
                 AllowAddingOnlyExistingAttributeCombinations = product.AllowAddingOnlyExistingAttributeCombinations
             };
+
+            if (product.ProductTemplateId == _appConfig.AppointmentTemplateId || 
+                product.ProductTemplateId == _appConfig.GroupedAppointmentTemplateId)
+            {
+                // Check if current customer is authorized to book time for this product
+                //model.IsUserAuthorizedToBookTime = _workContext.CurrentCustomer.CustomerVendorMappings.Any(cv => cv.VendorId == product.VendorId && cv.IsApproved);
+                // TODO: put values in product attribute
+                model.BusinessBeginsHour = 9;
+                model.BusinessEndsHour = 23;
+                model.MaxHoursAllowed = 2;
+                model.MaxFutureDays = 7;
+            }
 
             //automatically generate product description?
             if (_seoSettings.GenerateProductMetaDescription && string.IsNullOrEmpty(model.MetaDescription))

@@ -9,17 +9,20 @@ using Nop.Core.Domain.Catalog;
 using Nop.Core.Domain.Localization;
 using Nop.Core.Domain.Orders;
 using Nop.Core.Domain.Security;
+using Nop.Core.Domain.Self;
 using Nop.Core.Domain.Shipping;
 using Nop.Core.Events;
 using Nop.Core.Rss;
 using Nop.Services.Catalog;
 using Nop.Services.Customers;
+using Nop.Services.Helpers;
 using Nop.Services.Html;
 using Nop.Services.Localization;
 using Nop.Services.Logging;
 using Nop.Services.Messages;
 using Nop.Services.Orders;
 using Nop.Services.Security;
+using Nop.Services.Self;
 using Nop.Services.Seo;
 using Nop.Services.Stores;
 using Nop.Web.Factories;
@@ -28,6 +31,7 @@ using Nop.Web.Framework.Controllers;
 using Nop.Web.Framework.Mvc;
 using Nop.Web.Framework.Mvc.Filters;
 using Nop.Web.Models.Catalog;
+using Nop.Web.Models.Self;
 
 namespace Nop.Web.Controllers
 {
@@ -63,6 +67,9 @@ namespace Nop.Web.Controllers
         private readonly LocalizationSettings _localizationSettings;
         private readonly ShoppingCartSettings _shoppingCartSettings;
         private readonly ShippingSettings _shippingSettings;
+        private readonly IAppointmentService _appointmentService;
+        private readonly IAppointmentModelFactory _appointmentModelFactory;
+        private readonly IDateTimeHelper _dateTimeHelper;
 
         #endregion
 
@@ -94,6 +101,9 @@ namespace Nop.Web.Controllers
             IWorkflowMessageService workflowMessageService,
             LocalizationSettings localizationSettings,
             ShoppingCartSettings shoppingCartSettings,
+            IAppointmentService appointmentService,
+            IAppointmentModelFactory appointmentModelFactory,
+            IDateTimeHelper dateTimeHelper,
             ShippingSettings shippingSettings)
         {
             _captchaSettings = captchaSettings;
@@ -123,6 +133,9 @@ namespace Nop.Web.Controllers
             _localizationSettings = localizationSettings;
             _shoppingCartSettings = shoppingCartSettings;
             _shippingSettings = shippingSettings;
+            _appointmentService = appointmentService;
+            _appointmentModelFactory = appointmentModelFactory;
+            _dateTimeHelper = dateTimeHelper;
         }
 
         #endregion
@@ -156,6 +169,220 @@ namespace Nop.Web.Controllers
         }
 
         #endregion
+
+        #region Appointment Methods
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public virtual async Task<IActionResult> AppointmentSlotsByCustomer(DateTime start, DateTime end, int resourceId)
+        {
+            var currentCustomer = _workContext.GetCurrentCustomerAsync();
+            var events = await _appointmentService.GetAvailableAppointmentsByCustomerAsync(start, end, resourceId, currentCustomer.Id);
+
+            var model = new List<AppointmentInfoModel>();
+            foreach (var appointment in events)
+            {
+                var item = _appointmentModelFactory.PrepareAppointmentInfoModel(appointment);
+                model.Add(item);
+            }
+
+            return Json(model);
+        }
+
+        public virtual async Task<IActionResult> AppointmentUpdate(int id)
+        {
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
+            //if (currentCustomer.IsGuest())
+            //{
+            //    string statusText = _localizationService.GetResource("Product.AppointmentUpdate.LoginRequired");
+            //    return Json(new { status = false, message = statusText, data = 0 });
+            //}
+
+            var appointment = await _appointmentService.GetAppointmentByIdAsync(id);
+            if (appointment != null && (!appointment.CustomerId.HasValue || appointment.CustomerId == currentCustomer.Id))
+            {
+                //prepare model
+                var model = _appointmentModelFactory.PrepareAppointmentUpdateModel(appointment);
+                return Json(new { status = true, data = model });
+            }
+            else
+            {
+                string statusText = await _localizationService.GetResourceAsync("Product.AppointmentUpdate.SlotNotExist");
+                return Json(new { status = false, message = statusText });
+            }
+        }
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public virtual async Task<IActionResult> AppointmentRequest(int id, string notes)
+        {
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
+            //if (_workContext.CurrentCustomer.IsGuest())
+            //{
+            //    string statusText = _localizationService.GetResource("Product.AppointmentUpdate.LoginRequired");
+            //    return Json(new { status = false, message = statusText, data = 0 });
+            //}
+
+            var appointment = await _appointmentService.GetAppointmentByIdAsync(id);
+            // TODO: Check business logic by Product
+            // Check if CurrentCustomer is a member of Vendor 
+            if (appointment != null && appointment.Status == AppointmentStatusType.Free)
+            {
+                appointment.CustomerId = currentCustomer.Id;
+                appointment.Status = AppointmentStatusType.Waiting;
+                appointment.Notes = notes;
+                await _appointmentService.UpdateAppointmentAsync(appointment);
+
+                var model = _appointmentModelFactory.PrepareAppointmentUpdateModel(appointment);
+
+                return Json(new { status = true });
+            }
+            else
+            {
+                string statusText = await _localizationService.GetResourceAsync("Product.AppointmentRequest.Failed");
+                return Json(new { status = false, message = statusText });
+            }
+        }
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public virtual async Task<IActionResult> AppointmentCancel(int id)
+        {
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
+            //if (_workContext.CurrentCustomer.IsGuest())
+            //{
+            //    string statusText = _localizationService.GetResource("Product.AppointmentUpdate.LoginRequired");
+            //    return Json(new { status = false, message = statusText, data = 0 });
+            //}
+
+            var appointment = await _appointmentService.GetAppointmentByIdAsync(id);
+            if (appointment != null && appointment.CustomerId == currentCustomer.Id && appointment.Status == AppointmentStatusType.Waiting)
+            {
+                appointment.Status = AppointmentStatusType.Free;
+                appointment.CustomerId = null;
+                appointment.Notes = "";
+                await _appointmentService.UpdateAppointmentAsync(appointment);
+
+                var model = _appointmentModelFactory.PrepareAppointmentUpdateModel(appointment);
+
+                return Json(new { status = true });
+            }
+            else
+            {
+                string statusText = await _localizationService.GetResourceAsync("Product.AppointmentCancel.Failed");
+                return Json(new { status = false, message = statusText });
+            }
+        }
+
+        #endregion Appointment Methods
+
+        #region Grouped Products Appointments
+
+        public virtual async Task<IActionResult> GetResourcesByParent(int parentProductId)
+        {
+            var model = await _appointmentModelFactory.PrepareVendorResourcesModelAsync(parentProductId);
+            return Json(model);
+        }
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public virtual async Task<IActionResult> GetAppointmentsByParent(int parentProductId, DateTime start, DateTime end)
+        {
+            var events = await _appointmentService.GetAppointmentsByParentAsync(parentProductId, start, end);
+
+            var model = new List<VendorAppointmentInfoModel>();
+            foreach (var appointment in events)
+            {
+                var item = _appointmentModelFactory.PrepareVendorAppointmentInfoModel(appointment);
+                model.Add(item);
+                item.backColor = "#E69138";
+                item.bubbleHtml = "Not available";
+                item.moveDisabled = true;
+                item.resizeDisabled = true;
+                item.clickDisabled = true;
+                // TODO: remove customer name for non-admin user ?
+                if (appointment.Customer != null)
+                {
+                    item.text = appointment.Customer.Username ?? appointment.Customer.Email;
+                };
+            }
+
+            return Json(model);
+        }
+
+        public virtual async Task<IActionResult> RequestVendorAppointment(int parentProductId, int resourceId, DateTime start, DateTime end)
+        {
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
+            //if (_workContext.CurrentCustomer.IsGuest())
+            //{
+            //    string statusText = _localizationService.GetResource("GroupedProduct.RequestVendorAppointment.LoginRequired");
+            //    return Json(new { status = false, message = statusText, data = 0 });
+            //}
+
+            var vendorResources = await _appointmentModelFactory.PrepareVendorResourcesModelAsync(parentProductId);
+            var vendorResource = vendorResources.FirstOrDefault(o => o.id == resourceId.ToString());
+
+            VendorAppointmentInfoModel model = new VendorAppointmentInfoModel();
+            model.parentProductId = parentProductId.ToString();
+            model.resource = resourceId.ToString();
+            model.resourceName = vendorResource != null ? vendorResource.name : resourceId.ToString();
+            model.timeRange = $"{start.ToShortTimeString()} - {end.ToShortTimeString()}, {start.ToShortDateString()} {start.ToString("dddd")}";
+            model.start = start.ToString("yyyy-MM-ddTHH:mm:ss");
+            model.end = end.ToString("yyyy-MM-ddTHH:mm:ss"); ;
+
+            return Json(new { status = true, data = model });
+        }
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public virtual async Task<IActionResult> SaveVendorAppointment(int parentProductId, int resourceId, DateTime start, DateTime end)
+        {
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
+            //if (_workContext.CurrentCustomer.IsGuest())
+            //{
+            //    string statusText = _localizationService.GetResource("GroupedProduct.RequestVendorAppointment.LoginRequired");
+            //    return Json(new { status = false, message = statusText });
+            //}
+
+            // TODO: Get Product by parentProductId
+            // Check business logic by Product
+            // Check if CurrentCustomer is a member of Vendor 
+
+            try
+            {
+                // Check if the requested time slot is taken already 
+                if (!_appointmentService.IsTaken(resourceId, start, end))
+                {
+                    var startTimeUtc = _dateTimeHelper.ConvertToUtcTime(start);
+                    var endTimeUtc = _dateTimeHelper.ConvertToUtcTime(end);
+
+                    Appointment appointment = new Appointment
+                    {
+                        StartTimeUtc = startTimeUtc,
+                        EndTimeUtc = endTimeUtc,
+                        ResourceId = resourceId,
+                        StatusId = (int)AppointmentStatusType.Confirmed,
+                        CustomerId = currentCustomer.Id,
+                        ParentProductId = parentProductId
+                    };
+                    await _appointmentService.InsertAppointmentAsync(appointment);
+                    return Json(new { status = true });
+                }
+                else
+                {
+                    // Time slot is taken, show error message
+                    string statusText = await _localizationService.GetResourceAsync("GroupedProduct.VendorAppointment.TimeTaken");
+                    return Json(new { status = false, message = statusText });
+                }
+            }
+            catch (Exception ex)
+            {
+                string statusText = $"{await _localizationService.GetResourceAsync("GroupedProduct.VendorAppointment.Failed")}: {ex.Message}";
+                return Json(new { status = false, message = statusText });
+            }
+        }
+
+        #endregion Grouped Products Appointments
 
         #region Product details page
 

@@ -42,6 +42,7 @@ using Nop.Services.Plugins.Marketplace;
 using Nop.Services.Polls;
 using Nop.Services.ScheduleTasks;
 using Nop.Services.Security;
+using Nop.Services.Self;
 using Nop.Services.Seo;
 using Nop.Services.Shipping;
 using Nop.Services.Shipping.Date;
@@ -111,6 +112,7 @@ namespace Nop.Web.Framework.Infrastructure
             services.AddScoped<IStoreContext, WebStoreContext>();
 
             //services
+            services.AddScoped<IAppointmentService, AppointmentService>();
             services.AddScoped<IBackInStockSubscriptionService, BackInStockSubscriptionService>();
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<ICompareProductsService, CompareProductsService>();
