@@ -1593,14 +1593,18 @@ namespace Nop.Web.Factories
             //associated products
             if (product.ProductType == ProductType.GroupedProduct)
             {
-                //ensure no circular references
-                if (!isAssociatedProduct)
+                // Self logic to skip getting associated products
+                if (product.ProductTemplateId != _appConfig.GroupedAppointmentTemplateId)
                 {
-                    var associatedProducts = await _productService.GetAssociatedProductsAsync(product.Id, store.Id);
-                    foreach (var associatedProduct in associatedProducts)
-                        model.AssociatedProducts.Add(await PrepareProductDetailsModelAsync(associatedProduct, null, true));
+                    //ensure no circular references
+                    if (!isAssociatedProduct)
+                    {
+                        var associatedProducts = await _productService.GetAssociatedProductsAsync(product.Id, store.Id);
+                        foreach (var associatedProduct in associatedProducts)
+                            model.AssociatedProducts.Add(await PrepareProductDetailsModelAsync(associatedProduct, null, true));
+                    }
+                    model.InStock = model.AssociatedProducts.Any(associatedProduct => associatedProduct.InStock);
                 }
-                model.InStock = model.AssociatedProducts.Any(associatedProduct => associatedProduct.InStock);
             }
 
             return model;

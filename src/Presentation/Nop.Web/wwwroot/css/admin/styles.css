@@ -2612,3 +2612,17 @@ div.dataTables_wrapper div.dataTables_paginate {
     float: none;
   }
 }
+
+/* DayPilot basic css */
+.book-main {
+  padding: 10px;
+}
+
+.column-main {
+  margin-left: 220px;
+}
+
+.column-left {
+  float: left;
+  width: 220px;
+}

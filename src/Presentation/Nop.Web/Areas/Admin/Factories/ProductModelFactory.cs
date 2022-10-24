@@ -77,6 +77,7 @@ namespace Nop.Web.Areas.Admin.Factories
         private readonly MeasureSettings _measureSettings;
         private readonly TaxSettings _taxSettings;
         private readonly VendorSettings _vendorSettings;
+        private readonly AppConfig _appConfig;
 
         #endregion
 
@@ -116,6 +117,7 @@ namespace Nop.Web.Areas.Admin.Factories
             IWorkContext workContext,
             MeasureSettings measureSettings,
             TaxSettings taxSettings,
+            AppConfig appConfig,
             VendorSettings vendorSettings)
         {
             _catalogSettings = catalogSettings;
@@ -153,6 +155,7 @@ namespace Nop.Web.Areas.Admin.Factories
             _workContext = workContext;
             _taxSettings = taxSettings;
             _vendorSettings = vendorSettings;
+            _appConfig = appConfig;
         }
 
         #endregion
@@ -786,6 +789,15 @@ namespace Nop.Web.Areas.Admin.Factories
                 {
                     model = product.ToModel<ProductModel>();
                     model.SeName = await _urlRecordService.GetSeNameAsync(product, 0, true, false);
+                }
+
+                // Self logic for appointment template
+                if (product.ProductTemplateId == _appConfig.AppointmentTemplateId 
+                    || product.ProductTemplateId == _appConfig.GroupedAppointmentTemplateId)
+                {
+                    model.ShowCalendar = true;
+                    // Child product or parent product can't edit schedule
+                    model.ShowSchedule = product.ParentGroupedProductId == 0 && product.ProductType == ProductType.SimpleProduct;
                 }
 
                 var parentGroupedProduct = await _productService.GetProductByIdAsync(product.ParentGroupedProductId);

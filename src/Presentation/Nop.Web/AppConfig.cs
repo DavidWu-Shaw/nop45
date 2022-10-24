@@ -1,4 +1,4 @@
-﻿namespace Nop.Web.Models.Self
+﻿namespace Nop.Web
 {
     public class AppConfig
     {

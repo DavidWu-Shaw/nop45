@@ -1,0 +1,29 @@
+@model ProductCalendarModel
+@{
+    //page title
+    ViewBag.Title = T("Admin.Catalog.Products.CreateSchedule").Text;
+    //active menu item (system name)
+    NopHtml.SetActiveMenuItemSystemName("Products");
+}
+<form asp-controller="Product" asp-action="Edit" method="post" id="product-form">
+    <div class="content-header clearfix">
+        <h1 class="pull-left">
+            @T("Admin.Catalog.Products.CreateSchedule") - @Model.ProductName
+            <small>
+                <i class="fa fa-arrow-circle-left"></i>
+                <a asp-action="List">@T("Admin.Catalog.Products.BackToList")</a>
+            </small>
+        </h1>
+        <div class="pull-right">
+            @if (Model.ShowCalendar)
+            {
+                <a asp-action="AppointmentCalendar" asp-route-id="@Model.Id" class="btn bg-purple-active">
+                    <i class="fa fa-eye"></i>
+                    @T("Admin.Common.Calendar")
+                </a>
+            }
+        </div>
+    </div>
+    @await Html.PartialAsync("_SimpleProductSchedule", Model)
+</form>
+
