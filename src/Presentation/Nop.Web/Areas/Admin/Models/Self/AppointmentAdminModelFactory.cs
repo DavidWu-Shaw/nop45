@@ -35,8 +35,9 @@ namespace Nop.Web.Areas.Admin.Models.Self
             var model = new AppointmentEditModel();
             if (appointment != null)
             {
+                var product = await _productService.GetProductByIdAsync(appointment.ResourceId);
                 model.Id = appointment.Id;
-                model.ResourceName = appointment.Product.Name;
+                model.ResourceName = product.Name;
                 model.ResourceId = appointment.ResourceId;
                 var start = _dateTimeHelper.ConvertToUserTime(appointment.StartTimeUtc, TimeZoneInfo.Utc, TimeZoneInfo.Local);
                 var end = _dateTimeHelper.ConvertToUserTime(appointment.EndTimeUtc, TimeZoneInfo.Utc, TimeZoneInfo.Local);
@@ -44,17 +45,18 @@ namespace Nop.Web.Areas.Admin.Models.Self
                 model.Status = appointment.Status.ToString();
                 model.Notes = appointment.Notes;
                 model.CustomerId = appointment.CustomerId ?? 0;
-                if (appointment.Customer != null)
+                var customer = await _customerService.GetCustomerByIdAsync(appointment.CustomerId.Value);
+                if (customer != null)
                 {
-                    model.CustomerFullName = await _customerService.GetCustomerFullNameAsync(appointment.Customer);
-                    model.CustomerEmail = appointment.Customer.Email;
+                    model.CustomerFullName = await _customerService.GetCustomerFullNameAsync(customer);
+                    model.CustomerEmail = customer.Email;
                 }
             }
 
             return model;
         }
 
-        public virtual AppointmentInfoModel PrepareAppointmentInfoModel(Appointment appointment)
+        public virtual async Task<AppointmentInfoModel> PrepareAppointmentInfoModel(Appointment appointment)
         {
             var model = new AppointmentInfoModel
             {
@@ -63,20 +65,23 @@ namespace Nop.Web.Areas.Admin.Models.Self
                 end = _dateTimeHelper.ConvertToUserTime(appointment.EndTimeUtc, TimeZoneInfo.Utc, TimeZoneInfo.Local).ToString("yyyy-MM-ddTHH:mm:ss"),
                 resource = appointment.ResourceId.ToString()
             };
+            var product = await _productService.GetProductByIdAsync(appointment.ResourceId);
+            var customer = await _customerService.GetCustomerByIdAsync(appointment.CustomerId.Value);
+
             model.tags = new TagModel
             {
                 status = appointment.Status.ToString(),
-                doctor = appointment.Product.Name
+                doctor = product.Name
             };
-            if (appointment.Customer != null)
+            if (customer != null)
             {
-                model.text = appointment.Customer.Username ?? appointment.Customer.Email;
+                model.text = customer.Username ?? customer.Email;
             };
 
             return model;
         }
 
-        public ProductCalendarModel PrepareProductCalendarModel(ProductCalendarModel model, Product product)
+        public async Task<ProductCalendarModel> PrepareProductCalendarModel(ProductCalendarModel model, Product product)
         {
             if (model == null)
                 throw new ArgumentNullException(nameof(model));
@@ -97,7 +102,7 @@ namespace Nop.Web.Areas.Admin.Models.Self
             return model;
         }
 
-        public virtual VendorAppointmentInfoModel PrepareVendorAppointmentInfoModel(Appointment appointment)
+        public virtual async Task<VendorAppointmentInfoModel> PrepareVendorAppointmentInfoModel(Appointment appointment)
         {
             var model = new VendorAppointmentInfoModel
             {
@@ -106,9 +111,10 @@ namespace Nop.Web.Areas.Admin.Models.Self
                 end = _dateTimeHelper.ConvertToUserTime(appointment.EndTimeUtc, TimeZoneInfo.Utc, TimeZoneInfo.Local).ToString("yyyy-MM-ddTHH:mm:ss"),
                 resource = appointment.ResourceId.ToString()
             };
-            if (appointment.Customer != null)
+            var customer = await _customerService.GetCustomerByIdAsync(appointment.CustomerId.Value);
+            if (customer != null)
             {
-                model.text = appointment.Customer.Username ?? appointment.Customer.Email;
+                model.text = customer.Username ?? customer.Email;
             };
 
             return model;

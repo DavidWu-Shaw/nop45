@@ -13,8 +13,8 @@ namespace Nop.Core.Domain.Self
         public int ResourceId { get; set; }
         public int? CustomerId { get; set; }
         public int? ParentProductId { get; set; }
-        public virtual Product Product { get; set; }
-        public virtual Customer Customer { get; set; }
+        //public virtual Product Product { get; set; }
+        //public virtual Customer Customer { get; set; }
 
         public AppointmentStatusType Status
         {

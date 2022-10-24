@@ -182,7 +182,7 @@ namespace Nop.Web.Controllers
             var model = new List<AppointmentInfoModel>();
             foreach (var appointment in events)
             {
-                var item = _appointmentModelFactory.PrepareAppointmentInfoModel(appointment);
+                var item = await _appointmentModelFactory.PrepareAppointmentInfoModel(appointment);
                 model.Add(item);
             }
 
@@ -293,7 +293,7 @@ namespace Nop.Web.Controllers
             var model = new List<VendorAppointmentInfoModel>();
             foreach (var appointment in events)
             {
-                var item = _appointmentModelFactory.PrepareVendorAppointmentInfoModel(appointment);
+                var item = await _appointmentModelFactory.PrepareVendorAppointmentInfoModel(appointment);
                 model.Add(item);
                 item.backColor = "#E69138";
                 item.bubbleHtml = "Not available";
@@ -301,9 +301,10 @@ namespace Nop.Web.Controllers
                 item.resizeDisabled = true;
                 item.clickDisabled = true;
                 // TODO: remove customer name for non-admin user ?
-                if (appointment.Customer != null)
+                var customer = await _customerService.GetCustomerByIdAsync(appointment.CustomerId.Value);
+                if (customer != null)
                 {
-                    item.text = appointment.Customer.Username ?? appointment.Customer.Email;
+                    item.text = customer.Username ?? customer.Email;
                 };
             }
 

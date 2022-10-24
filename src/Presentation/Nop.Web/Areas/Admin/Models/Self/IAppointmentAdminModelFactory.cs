@@ -9,9 +9,9 @@ namespace Nop.Web.Areas.Admin.Models.Self
     public interface IAppointmentAdminModelFactory
     {
         Task<AppointmentEditModel> PrepareAppointmentEditModelAsync(Appointment appointment);
-        AppointmentInfoModel PrepareAppointmentInfoModel(Appointment appointment);
-        ProductCalendarModel PrepareProductCalendarModel(ProductCalendarModel model, Product product);
-        VendorAppointmentInfoModel PrepareVendorAppointmentInfoModel(Appointment appointment);
+        Task<AppointmentInfoModel> PrepareAppointmentInfoModel(Appointment appointment);
+        Task<ProductCalendarModel> PrepareProductCalendarModel(ProductCalendarModel model, Product product);
+        Task<VendorAppointmentInfoModel> PrepareVendorAppointmentInfoModel(Appointment appointment);
         Task<List<VendorResourceModel>> PrepareVendorResourcesModelAsync(int parentProductId);
     };
 }

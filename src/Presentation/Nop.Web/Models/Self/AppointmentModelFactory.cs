@@ -6,25 +6,29 @@ using System;
 using System.Collections.Generic;
 using Nop.Web.Infrastructure.Cache;
 using System.Threading.Tasks;
+using Nop.Services.Customers;
 
 namespace Nop.Web.Models.Self
 {
     public partial class AppointmentModelFactory : IAppointmentModelFactory
     {
         private readonly IProductService _productService;
+        private readonly ICustomerService _customerService;
         private readonly IDateTimeHelper _dateTimeHelper;
         private readonly IStaticCacheManager _cacheManager;
 
         public AppointmentModelFactory(IProductService productService,
+            ICustomerService customerService,
             IStaticCacheManager cacheManager,
             IDateTimeHelper dateTimeHelper)
         {
             _productService = productService;
+            _customerService = customerService;
             _cacheManager = cacheManager;
             _dateTimeHelper = dateTimeHelper;
         }
 
-        public virtual AppointmentUpdateModel PrepareAppointmentUpdateModel(Appointment appointment)
+        public virtual async Task<AppointmentUpdateModel> PrepareAppointmentUpdateModel(Appointment appointment)
         {
             var model = new AppointmentUpdateModel();
             if (appointment != null)
@@ -40,7 +44,7 @@ namespace Nop.Web.Models.Self
             return model;
         }
 
-        public virtual AppointmentInfoModel PrepareAppointmentInfoModel(Appointment appointment)
+        public virtual async Task<AppointmentInfoModel> PrepareAppointmentInfoModel(Appointment appointment)
         {
             var model = new AppointmentInfoModel
             {
@@ -49,20 +53,22 @@ namespace Nop.Web.Models.Self
                 end = _dateTimeHelper.ConvertToUserTime(appointment.EndTimeUtc, TimeZoneInfo.Utc, TimeZoneInfo.Local).ToString("yyyy-MM-ddTHH:mm:ss"),
                 resource = appointment.ResourceId.ToString()
             };
+            var product = await _productService.GetProductByIdAsync(appointment.ResourceId);
+            var customer = await _customerService.GetCustomerByIdAsync(appointment.CustomerId.Value);
             model.tags = new TagModel
             {
                 status = appointment.Status.ToString(),
-                doctor = appointment.Product.Name
+                doctor = product.Name
             };
-            if (appointment.Customer != null)
+            if (customer != null)
             {
-                model.text = appointment.Customer.Username;
+                model.text = customer.Username;
             };
 
             return model;
         }
 
-        public virtual VendorAppointmentInfoModel PrepareVendorAppointmentInfoModel(Appointment appointment)
+        public virtual async Task<VendorAppointmentInfoModel> PrepareVendorAppointmentInfoModel(Appointment appointment)
         {
             var model = new VendorAppointmentInfoModel
             {

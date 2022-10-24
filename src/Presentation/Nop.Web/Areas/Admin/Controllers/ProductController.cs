@@ -777,7 +777,7 @@ namespace Nop.Web.Areas.Admin.Controllers
                 return RedirectToAction("List");
             }
             //prepare model
-            var model = _appointmentModelFactory.PrepareProductCalendarModel(new ProductCalendarModel(), product);
+            var model = await _appointmentModelFactory.PrepareProductCalendarModel(new ProductCalendarModel(), product);
 
             return View(model);
         }
@@ -810,7 +810,7 @@ namespace Nop.Web.Areas.Admin.Controllers
                     return RedirectToAction("List");
             }
             //prepare model
-            var model = _appointmentModelFactory.PrepareProductCalendarModel(new ProductCalendarModel(), product);
+            var model = await _appointmentModelFactory.PrepareProductCalendarModel(new ProductCalendarModel(), product);
 
             return View(model);
         }
@@ -826,7 +826,7 @@ namespace Nop.Web.Areas.Admin.Controllers
             var model = new List<AppointmentInfoModel>();
             foreach (var appointment in appointments)
             {
-                var item = _appointmentModelFactory.PrepareAppointmentInfoModel(appointment);
+                var item = await _appointmentModelFactory.PrepareAppointmentInfoModel(appointment);
                 model.Add(item);
             }
 
@@ -993,7 +993,7 @@ namespace Nop.Web.Areas.Admin.Controllers
             var model = new List<VendorAppointmentInfoModel>();
             foreach (var appointment in events)
             {
-                var item = _appointmentModelFactory.PrepareVendorAppointmentInfoModel(appointment);
+                var item = await _appointmentModelFactory.PrepareVendorAppointmentInfoModel(appointment);
                 model.Add(item);
                 item.backColor = "#E69138";
                 item.bubbleHtml = item.text;
