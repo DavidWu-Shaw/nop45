@@ -4,7 +4,7 @@ using Nop.Web.Framework.Mvc.ModelBinding;
 
 namespace Nop.Web.Models.Self
 {
-    public record AppointmentUpdateModel : BaseNopEntityModel
+    public record AppointmentDetailModel : BaseNopEntityModel
     {
         [NopResourceDisplayName("Product.Appointment.Fields.TimeSlot")]
         public string TimeSlot { get; set; }

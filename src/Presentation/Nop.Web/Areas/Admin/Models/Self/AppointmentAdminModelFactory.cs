@@ -19,9 +19,9 @@ namespace Nop.Web.Areas.Admin.Models.Self
         private readonly IDateTimeHelper _dateTimeHelper;
         private readonly IStaticCacheManager _cacheManager;
 
-        public AppointmentAdminModelFactory(IProductService productService, 
-            ICustomerService customerService, 
-            IDateTimeHelper dateTimeHelper, 
+        public AppointmentAdminModelFactory(IProductService productService,
+            ICustomerService customerService,
+            IDateTimeHelper dateTimeHelper,
             IStaticCacheManager cacheManager)
         {
             _productService = productService;
@@ -44,10 +44,11 @@ namespace Nop.Web.Areas.Admin.Models.Self
                 model.TimeSlot = $"{start.ToShortTimeString()} - {end.ToShortTimeString()}, {start.ToShortDateString()} {start.ToString("dddd")}";
                 model.Status = appointment.Status.ToString();
                 model.Notes = appointment.Notes;
-                model.CustomerId = appointment.CustomerId ?? 0;
-                var customer = await _customerService.GetCustomerByIdAsync(appointment.CustomerId.Value);
-                if (customer != null)
+
+                if (appointment.CustomerId.HasValue)
                 {
+                    var customer = await _customerService.GetCustomerByIdAsync(appointment.CustomerId.Value);
+                    model.CustomerId = appointment.CustomerId ?? 0;
                     model.CustomerFullName = await _customerService.GetCustomerFullNameAsync(customer);
                     model.CustomerEmail = customer.Email;
                 }
@@ -66,16 +67,17 @@ namespace Nop.Web.Areas.Admin.Models.Self
                 resource = appointment.ResourceId.ToString()
             };
             var product = await _productService.GetProductByIdAsync(appointment.ResourceId);
-            var customer = await _customerService.GetCustomerByIdAsync(appointment.CustomerId.Value);
 
             model.tags = new TagModel
             {
                 status = appointment.Status.ToString(),
                 doctor = product.Name
             };
-            if (customer != null)
+            if (appointment.CustomerId.HasValue)
             {
-                model.text = customer.Username ?? customer.Email;
+                var customer = await _customerService.GetCustomerByIdAsync(appointment.CustomerId.Value);
+                var customerFullName = await _customerService.GetCustomerFullNameAsync(customer);
+                model.text = customerFullName ?? customer.Email;
             };
 
             return model;
@@ -111,10 +113,11 @@ namespace Nop.Web.Areas.Admin.Models.Self
                 end = _dateTimeHelper.ConvertToUserTime(appointment.EndTimeUtc, TimeZoneInfo.Utc, TimeZoneInfo.Local).ToString("yyyy-MM-ddTHH:mm:ss"),
                 resource = appointment.ResourceId.ToString()
             };
-            var customer = await _customerService.GetCustomerByIdAsync(appointment.CustomerId.Value);
-            if (customer != null)
+            if (appointment.CustomerId.HasValue)
             {
-                model.text = customer.Username ?? customer.Email;
+                var customer = await _customerService.GetCustomerByIdAsync(appointment.CustomerId.Value);
+                var customerFullName = await _customerService.GetCustomerFullNameAsync(customer);
+                model.text = customerFullName ?? customer.Email;
             };
 
             return model;

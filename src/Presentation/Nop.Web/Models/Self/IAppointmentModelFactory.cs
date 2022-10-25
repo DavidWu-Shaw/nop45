@@ -6,7 +6,7 @@ namespace Nop.Web.Models.Self
 {
     public interface IAppointmentModelFactory
     {
-        Task<AppointmentUpdateModel> PrepareAppointmentUpdateModel(Appointment appointment);
+        Task<AppointmentDetailModel> PrepareAppointmentDetailModel(Appointment appointment);
         Task<AppointmentInfoModel> PrepareAppointmentInfoModel(Appointment appointment);
         Task<VendorAppointmentInfoModel> PrepareVendorAppointmentInfoModel(Appointment appointment);
         Task<List<VendorResourceModel>> PrepareVendorResourcesModelAsync(int parentProductId);

@@ -176,7 +176,7 @@ namespace Nop.Web.Controllers
         [IgnoreAntiforgeryToken]
         public virtual async Task<IActionResult> AppointmentSlotsByCustomer(DateTime start, DateTime end, int resourceId)
         {
-            var currentCustomer = _workContext.GetCurrentCustomerAsync();
+            var currentCustomer = await _workContext.GetCurrentCustomerAsync();
             var events = await _appointmentService.GetAvailableAppointmentsByCustomerAsync(start, end, resourceId, currentCustomer.Id);
 
             var model = new List<AppointmentInfoModel>();
@@ -189,7 +189,7 @@ namespace Nop.Web.Controllers
             return Json(model);
         }
 
-        public virtual async Task<IActionResult> AppointmentUpdate(int id)
+        public virtual async Task<IActionResult> AppointmentDetail(int id)
         {
             var currentCustomer = await _workContext.GetCurrentCustomerAsync();
             //if (currentCustomer.IsGuest())
@@ -202,7 +202,7 @@ namespace Nop.Web.Controllers
             if (appointment != null && (!appointment.CustomerId.HasValue || appointment.CustomerId == currentCustomer.Id))
             {
                 //prepare model
-                var model = _appointmentModelFactory.PrepareAppointmentUpdateModel(appointment);
+                var model = await _appointmentModelFactory.PrepareAppointmentDetailModel(appointment);
                 return Json(new { status = true, data = model });
             }
             else
@@ -231,9 +231,8 @@ namespace Nop.Web.Controllers
                 appointment.CustomerId = currentCustomer.Id;
                 appointment.Status = AppointmentStatusType.Waiting;
                 appointment.Notes = notes;
+                // call service to update 
                 await _appointmentService.UpdateAppointmentAsync(appointment);
-
-                var model = _appointmentModelFactory.PrepareAppointmentUpdateModel(appointment);
 
                 return Json(new { status = true });
             }
@@ -261,9 +260,8 @@ namespace Nop.Web.Controllers
                 appointment.Status = AppointmentStatusType.Free;
                 appointment.CustomerId = null;
                 appointment.Notes = "";
+                // call service to cancel
                 await _appointmentService.UpdateAppointmentAsync(appointment);
-
-                var model = _appointmentModelFactory.PrepareAppointmentUpdateModel(appointment);
 
                 return Json(new { status = true });
             }
@@ -301,10 +299,10 @@ namespace Nop.Web.Controllers
                 item.resizeDisabled = true;
                 item.clickDisabled = true;
                 // TODO: remove customer name for non-admin user ?
-                var customer = await _customerService.GetCustomerByIdAsync(appointment.CustomerId.Value);
-                if (customer != null)
+                if (appointment.CustomerId.HasValue)
                 {
-                    item.text = customer.Username ?? customer.Email;
+                    var customer = await _customerService.GetCustomerByIdAsync(appointment.CustomerId.Value);
+                    item.text = await _customerService.GetCustomerFullNameAsync(customer);
                 };
             }
 

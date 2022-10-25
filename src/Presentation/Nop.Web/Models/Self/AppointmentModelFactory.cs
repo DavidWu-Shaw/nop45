@@ -28,9 +28,9 @@ namespace Nop.Web.Models.Self
             _dateTimeHelper = dateTimeHelper;
         }
 
-        public virtual async Task<AppointmentUpdateModel> PrepareAppointmentUpdateModel(Appointment appointment)
+        public virtual async Task<AppointmentDetailModel> PrepareAppointmentDetailModel(Appointment appointment)
         {
-            var model = new AppointmentUpdateModel();
+            var model = new AppointmentDetailModel();
             if (appointment != null)
             {
                 model.Id = appointment.Id;
@@ -54,15 +54,15 @@ namespace Nop.Web.Models.Self
                 resource = appointment.ResourceId.ToString()
             };
             var product = await _productService.GetProductByIdAsync(appointment.ResourceId);
-            var customer = await _customerService.GetCustomerByIdAsync(appointment.CustomerId.Value);
             model.tags = new TagModel
             {
                 status = appointment.Status.ToString(),
                 doctor = product.Name
             };
-            if (customer != null)
+            if (appointment.CustomerId.HasValue)
             {
-                model.text = customer.Username;
+                var customer = await _customerService.GetCustomerByIdAsync(appointment.CustomerId.Value);
+                model.text = await _customerService.GetCustomerFullNameAsync(customer);
             };
 
             return model;

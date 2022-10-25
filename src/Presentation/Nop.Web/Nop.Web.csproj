@@ -70,6 +70,9 @@
     <Content Update="Themes\Better\Views\Catalog\Vendor.cshtml">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
+    <Content Update="Themes\Better\Views\Home\Index.cshtml">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
     <Content Update="Themes\Better\Views\Product\ProductTemplate.GroupedAppointment.cshtml">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
