@@ -59,6 +59,10 @@
                 @await Html.PartialAsync("_Microdata", Model)
             }
             <div data-productid="@Model.Id">
+                @if (Model.IsUserAuthorizedToBookTime)
+                {
+                    @await Html.PartialAsync("_SimpleProductBooking", Model)
+                }
                 <div class="product-essential">
                     @await Component.InvokeAsync("Widget", new { widgetZone = PublicWidgetZones.ProductDetailsEssentialTop, additionalData = Model })
                     <!--product pictures-->
@@ -83,10 +87,6 @@
                         @await Html.PartialAsync("_ShareButton", Model)
                     </div>
                 </div>
-                @if (Model.IsUserAuthorizedToBookTime)
-                {
-                    @await Html.PartialAsync("_SimpleProductBooking", Model)
-                }
                 <div class="product-collateral">
                     @await Html.PartialAsync("_ProductSpecifications", Model.ProductSpecificationModel)
                     @await Html.PartialAsync("_ProductTags", Model.ProductTags)
